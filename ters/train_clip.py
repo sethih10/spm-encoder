@@ -47,7 +47,7 @@ def _synthetic(cfg):
     import os
     import tempfile
 
-    from tests.make_synthetic import make_synthetic_ters_pair_h5
+    from shared.synthetic import make_synthetic_ters_pair_h5
     tmp = tempfile.mkdtemp(prefix='ters-synthetic-')
     path, _ = make_synthetic_ters_pair_h5(
         os.path.join(tmp, 'train.h5'), n=max(int(cfg.data.max_train) or 12, 8),

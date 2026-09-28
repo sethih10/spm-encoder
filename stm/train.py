@@ -45,7 +45,7 @@ def _synthetic(cfg):
     import os
     import tempfile
 
-    from tests.make_synthetic import make_synthetic_stm_h5
+    from shared.synthetic import make_synthetic_stm_h5
     tmp = tempfile.mkdtemp(prefix='stm-ae-synthetic-')
     train_h5, split, _ = make_synthetic_stm_h5(os.path.join(tmp, 'train.h5'), n=8, hw=32)
     val_h5, _, _ = make_synthetic_stm_h5(os.path.join(tmp, 'val.h5'), n=4, hw=32, seed=1)

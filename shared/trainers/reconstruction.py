@@ -248,7 +248,7 @@ def run(config, synthetic=False, resume='', train_h5=None, val_h5=None):
         config.training.warmup_steps = 2
     elif args.synthetic:
         # The code must run before the data does.
-        from tests.make_synthetic import make_synthetic_h5
+        from shared.synthetic import make_synthetic_h5
         tmp = os.path.join(config.training.workdir, 'synthetic')
         train_h5 = make_synthetic_h5(os.path.join(tmp, 'train.h5'), n=8, hw=32, channels=6)
         val_h5 = make_synthetic_h5(os.path.join(tmp, 'val.h5'), n=4, hw=32, channels=6, seed=1)

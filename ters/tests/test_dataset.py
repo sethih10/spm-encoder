@@ -8,7 +8,7 @@ import torch
 
 from ters.datasets.collate import collate_ters
 from ters.datasets.ters_cubes import TersCubeDataset, TersPairDataset
-from tests.make_synthetic import make_synthetic_h5, make_synthetic_ters_pair_h5
+from shared.synthetic import make_synthetic_h5, make_synthetic_ters_pair_h5
 
 #: The TERS schema, declared here because this file is what enforces it.
 #: TERS has two readers and, unlike STM, one of them has no molecule at all, so the molecule

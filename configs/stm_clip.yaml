@@ -1,7 +1,6 @@
 # The live arm: whether an STM cube embedding identifies which molecule produced it.
-#   sbatch slurm/train_full.sbatch
-# These are the settings of the run README.md reports; the numbers it produced are
-# docs/12-results.md.
+#   python -m stm.train_clip --config configs/stm_clip.yaml
+# These are the settings of the run stm/README.md reports.
 base: base.yaml
 
 data:
@@ -47,7 +46,7 @@ training:
   warmup_steps: 100
   weight_decay: 0.01
   amp_dtype: bf16              # not fp16, which MEASURED discarded 10.6% of batches as
-                               # non-finite. Unresolved: docs/10-open-problems.md
+                               # non-finite
   seed: 0
   num_workers: 4
   select_on: top1_size_controlled_over_chance   # not val loss

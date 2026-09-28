@@ -16,7 +16,7 @@ from shared.losses.reconstruction import reconstruction_loss
 from shared.metrics.reconstruction import baseline_losses
 from shared.models.decoder import TersDecoder
 from ters.models.encoder import TersEncoder, TersSpatialEncoder
-from tests.make_synthetic import make_synthetic_h5
+from shared.synthetic import make_synthetic_h5
 
 FAILURES = []
 

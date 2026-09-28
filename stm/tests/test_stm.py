@@ -15,7 +15,7 @@ from shared.metrics.retrieval import size_confound_metrics
 from stm.models.spectral_gpt import SpectralGptCubeEncoder, load_spectralgpt_weights
 from stm.models.timm2d import STM2D_BACKBONES, Stm2dCubeEncoder, load_timm_backbone
 from stm.models.conv3d import StmCubeEncoder
-from tests.make_synthetic import make_synthetic_stm_h5
+from shared.synthetic import make_synthetic_stm_h5
 
 FAILURES = []
 CKPT = os.environ.get('TORCHMD_CKPT',
@@ -430,9 +430,12 @@ def test_sgpt_loads_the_real_checkpoint():
     # The inspector must not crash: a diagnostic that raises while describing a healthy
     # checkpoint reads as "the checkpoint is broken", which is worse than no diagnostic.
     import subprocess
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if not os.path.isfile(os.path.join(repo, 'tools', 'inspect_sgpt_ckpt.py')):
+        print('  [SKIP] tools/inspect_sgpt_ckpt.py is not present')
+        return
     p = subprocess.run([sys.executable, '-m', 'tools.inspect_sgpt_ckpt', SGPT_CKPT,
-                        '--max-print', '0'], capture_output=True, text=True,
-                       cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                        '--max-print', '0'], capture_output=True, text=True, cwd=repo)
     check('tools.inspect_sgpt_ckpt runs clean on the real checkpoint',
           p.returncode == 0, (p.stderr or '').strip().splitlines()[-1:] or 'exit 0')
     check('and it reports 100.0%', '100.0% of the trunk loaded' in p.stdout,

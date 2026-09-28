@@ -11,10 +11,6 @@ same objective. This modality trains for the second: whether a cube's embedding 
 molecule, via InfoNCE between the cube embedding and a 3-D structure embedding of the same
 molecule, with the rest of the batch as negatives.
 
-The dataset itself -- schema, splits, and known quirks -- is documented in
-[`docs/04`](../docs/04-datasets.md), not here. What the retrieval metrics mean and how to read
-a result: [`docs/08`](../docs/08-metrics-explained.md).
-
 ## Encoders
 
 Selected by `model.cube_encoder`. All return a LayerNorm-scaled vector of width `latent_dim`,
@@ -27,6 +23,41 @@ so differences between them are attributable to the encoder alone.
 | `sgpt` | A SpectralGPT-shaped 3-D vision transformer, optionally initialised from the published checkpoint. |
 | `ters` | The TERS ladder applied to STM cubes. A control: its 1x1 stem treats the slices as unordered. |
 
+## Pretrained weights
+
+The structure encoder checkpoint required by the contrastive arm is described in the
+[top-level README](../README.md#pretrained-models). Two encoders take optional
+pretrained weights of their own:
+
+| encoder | weights | source |
+| --- | --- | --- |
+| `sgpt` | `SpectralGPT+.pth` (1.18 GB) | [Zenodo 8412455](https://zenodo.org/records/8412455) |
+| `stm2d` | per backbone, e.g. `timm/vit_base_patch16_clip_224.openai` for `clip_vit_b16` | Hugging Face Hub, via timm |
+
+```bash
+mkdir -p checkpoints
+wget -O checkpoints/SpectralGPT+.pth \
+  "https://zenodo.org/api/records/8412455/files/SpectralGPT+.pth/content"
+```
+
+`stm2d` downloads its backbone through timm on first use. Compute nodes may have no internet
+access, so fetch it on a login node first:
+
+```bash
+python -c "from huggingface_hub import hf_hub_download; \
+print(hf_hub_download('timm/vit_base_patch16_clip_224.openai', 'pytorch_model.bin'))"
+```
+
+These weights are not config keys; pass them through the trainer's flag interface:
+
+```bash
+python -m shared.trainers.contrastive --cube-encoder sgpt  --sgpt-ckpt  checkpoints/SpectralGPT+.pth
+python -m shared.trainers.contrastive --cube-encoder stm2d --stm2d-ckpt <path printed above>
+```
+
+Without weights, `sgpt` and `stm2d` train from random initialisation, which is the
+from-scratch control rather than the transfer arm.
+
 ## Two objectives over one encoder
 
 Both entry points build the same cube encoder at the same 256-number budget, differing only in
@@ -37,6 +68,20 @@ what the vector is scored on -- which is what makes the two results comparable.
 | contrastive | `stm/train_clip.py` | `configs/stm_clip.yaml` | top-1 retrieval of the molecule |
 | reconstruction | `stm/train.py` | `configs/stm_ae.yaml` | MSE of the rebuilt z-stack |
 
+## Results
+
+`configs/stm_clip.yaml`, trained on 184,180 z-stacks and evaluated on a held-out file:
+
+| metric | value | reference |
+| --- | --- | --- |
+| size-controlled top-1 retrieval | 0.667 | chance 0.118 (batch 256) |
+| normalised rank | 0.087 | 0.5 = chance, 0.0 = perfect |
+| linear probe on the exported vector | 2.57x chance | random-init control 1.01x |
+
+A reconstruction-trained encoder reaches MSE 0.0065 against a 0.4809 baseline, yet retrieves
+at chance. Retrieval is reported against a size-controlled baseline because atom count alone
+identifies a molecule well above chance (0.403 top-1 at batch 64, against 1/B = 0.016).
+
 ## Usage
 
 ```bash
@@ -46,7 +91,6 @@ export PYTHONPATH="$PWD"
 python -m stm.train_clip --config configs/stm_clip.yaml   # contrastive: retrieval
 python -m stm.train      --config configs/stm_ae.yaml     # reconstruction: MSE
 python -m stm.tests.test_stm                              # 200 assertions
-sbatch slurm/train_full.sbatch                            # the experiment
 ```
 
 `--synthetic` runs either training command against a generated corpus with the real schema --
@@ -68,7 +112,7 @@ stm/
 
 The training loops live in `shared/trainers/`, which names no modality -- it reaches this
 folder's readers and models through the registry, so deleting `ters/` leaves both arms above
-working. `tests/test_boundary.py` asserts this by running each modality with the other absent.
+working.
 
 ## References
 

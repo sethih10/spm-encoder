@@ -21,6 +21,7 @@ model:
   cube_encoder: ters             # the reference encoder, so the arms stay comparable
   latent_dim: 256
   proj_dim: 128
+  structure_ckpt: /scratch/project_2001912/sethih1/checkpoints/denoised-pcqm4mv2.ckpt
 
 objective:
   temperature: 0.07

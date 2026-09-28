@@ -517,7 +517,7 @@ def _config_to_flat(cfg):
     every default, in the parser.
     """
     # (argument name, config section, key in that section)
-    TABLE = (
+    table = (
         ('cube_encoder', 'model', 'cube_encoder'), ('latent_dim', 'model', 'latent_dim'),
         ('proj_dim', 'model', 'proj_dim'), ('ckpt', 'model', 'structure_ckpt'),
         ('stem_channels', 'model', 'stem_channels'), ('filters', 'model', 'filters'),

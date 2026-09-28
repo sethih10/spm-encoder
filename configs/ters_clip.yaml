@@ -1,0 +1,32 @@
+# TERS contrastive: whether a cube embedding identifies which molecule produced it.
+#   python -m ters.train_clip --config configs/ters_clip.yaml
+#
+# The counterpart to configs/ters_ae.yaml. Same encoder, same 256-number budget, scored on
+# retrieval against the molecule rather than on reconstruction of the cube.
+#
+# NOTE: no TERS corpus with geometry groups is mounted (planar_hdf5_0.5 was deleted). The
+# paths record the schema this arm reads; --synthetic exercises the code without one.
+base: base.yaml
+
+data:
+  name: ters_pairs
+  root: /scratch/project_2001912/planar_hdf5_0.5
+  channels_key: channels_100
+  in_channels: 100
+  image_size: 256
+  z_slice: none                  # TERS cubes have no z axis to draw from
+
+model:
+  name: ters_clip
+  cube_encoder: ters             # the reference encoder, so the arms stay comparable
+  latent_dim: 256
+  proj_dim: 128
+
+objective:
+  temperature: 0.07
+  contrastive_weight: 1.0
+  recon_weight: 0.0              # >0 adds the decoder and trains both objectives at once
+
+training:
+  n_epochs: 100
+  workdir: exp/ters_clip

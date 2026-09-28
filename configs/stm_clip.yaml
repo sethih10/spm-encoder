@@ -1,0 +1,53 @@
+# The live arm: whether an STM cube embedding identifies which molecule produced it.
+#   sbatch slurm/train_full.sbatch
+# These are the settings of the run README.md reports; the numbers it produced are
+# docs/12-results.md.
+base: base.yaml
+
+data:
+  name: stm_pairs
+  root: /scratch/project_2001912/sethih1/stm-data            # the live corpus
+  train_split: train
+  val_split: val
+  in_channels: 14              # z-slices. Derived from z_slice; checked before fork
+  image_size: 128
+  z_slice: none                # none | mean | random | 0..13. A reader parameter, not a
+                               # transform: chunks are (1,H,W,1), so reading one slice is
+                               # MEASURED 11x cheaper.
+  centre: true
+  normalize: true
+  max_train: 0
+  max_val: 4000
+
+model:
+  name: dual_tower
+  cube_encoder: stm3d          # stm3d | ters | sgpt | stm2d
+  latent_dim: 256              # the exported vector
+  proj_dim: 128
+  stem_channels: [8, 16, 32]    # 3-D stem widths for stm3d. A different knob from
+                               # model.stem_channels in base.yaml, which selects an encoder
+  filters: [64, 128, 256]
+  cube_pool_size: 1
+  structure_ckpt: /scratch/project_2001912/sethih1/checkpoints/denoised-pcqm4mv2.ckpt
+  freeze_structure: false
+
+objective:
+  contrastive_weight: 1.0
+  recon_weight: 0.0            # >0 builds the decoder and adds the reconstruction term
+  temperature: 0.07
+  symmetric: true              # false = MolSpectra's implemented one-directional form
+  null_control: false          # true shuffles the pairs: every metric must fall to baseline
+
+training:
+  n_epochs: 10
+  batch_size: 16               # sets how many negatives InfoNCE sees, so a loader-bound batch
+                               # is a scientifically weaker experiment, not just a slower one
+  lr: 1.0e-4
+  lr_min: 1.0e-6
+  warmup_steps: 100
+  weight_decay: 0.01
+  amp_dtype: bf16              # not fp16, which MEASURED discarded 10.6% of batches as
+                               # non-finite. Unresolved: docs/10-open-problems.md
+  seed: 0
+  num_workers: 4
+  select_on: top1_size_controlled_over_chance   # not val loss

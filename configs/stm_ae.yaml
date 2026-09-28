@@ -1,0 +1,27 @@
+# STM reconstruction: how much of a z-stack is recovered from a bottleneck of fixed width.
+#   python -m stm.train --config configs/stm_ae.yaml
+#
+# The counterpart to configs/stm_clip.yaml: same cube encoder and the same 256-number budget,
+# scored on rebuilding the stack rather than on retrieving the molecule.
+base: base.yaml
+
+data:
+  name: stm_cubes
+  root: /scratch/project_2001912/sethih1/stm-data
+  train_split: train
+  val_split: val
+  in_channels: 14                # z-slices, not spectral channels
+  image_size: 128
+  z_slice: none                  # reconstruct the whole stack, not one slice
+  channel_mask: ''               # a spectral-channel concept; STM has none
+
+model:
+  name: stm_autoencoder
+  in_channels: 14
+  latent_dim: 256
+  stem_channels: [8, 16, 32]      # the 3-D stem, before the 2-D ladder
+  filters: [64, 128, 256]        # 128 -> 64 -> 32 -> 16 at the bottleneck
+
+training:
+  n_epochs: 100
+  workdir: exp/stm_ae

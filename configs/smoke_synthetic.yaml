@@ -1,0 +1,23 @@
+# The no-cluster, no-GPU, no-corpus path.
+#   python train.py --config configs/smoke_synthetic.yaml --synthetic
+# Small enough to finish on a login node in under a minute, and it is a test, not training,
+# so it is the one path that does not go through sbatch.
+base: stm_clip.yaml
+
+data:
+  in_channels: 14
+  image_size: 32
+  max_train: 24
+  max_val: 24
+  num_workers: 0
+
+model:
+  latent_dim: 16
+  proj_dim: 8
+
+training:
+  n_epochs: 1
+  batch_size: 4
+  max_steps: 0        # the contrastive loop bounds work with n_epochs + max_train, not steps
+  amp_dtype: 'off'
+  workdir: ''         # '' = write nothing; this is a smoke run, not a result

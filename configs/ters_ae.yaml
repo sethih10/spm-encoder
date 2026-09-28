@@ -1,0 +1,22 @@
+# TERS reconstruction: how much of a cube is recovered from a bottleneck of fixed width.
+#   python -m ters.train --config configs/ters_ae.yaml
+#
+# planar_hdf5_0.5 is not mounted. The paths below record the schema this arm reads, not a
+# corpus that exists; --synthetic exercises the same code without it.
+base: base.yaml
+
+data:
+  name: ters_cubes
+  root: /scratch/project_2001912/planar_hdf5_0.5
+  channels_key: channels_100     # channels_80 is a different corpus; scores do not compare
+  in_channels: 100
+  image_size: 256
+
+model:
+  name: ters_autoencoder         # ters_autoencoder | hsi_spectral | hsi_conv3d
+  latent_dim: 256
+  latent_hw: 1                   # 1 reproduces the reference encoder exactly
+
+training:
+  n_epochs: 100
+  workdir: exp/ters_ae

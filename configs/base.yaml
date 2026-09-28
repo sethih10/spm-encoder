@@ -1,0 +1,69 @@
+# Shared defaults. An experiment config names this with `base: base.yaml` and overrides only
+# what it changes, so a MEASURED number lives in one place.
+#
+# Each comment gives the value's status -- measured, or not. The argument, the sweep tables
+# and the rejected alternatives are in docs/14-configuration.md, one section per key.
+
+data:
+  # Dead path: planar_hdf5_0.5 was deleted and no TERS corpus is mounted on /scratch. The
+  # live corpus is STM, in configs/stm_clip.yaml.
+  root: /scratch/project_2001912/planar_hdf5_0.5
+  channels_key: channels_100     # channels_80 is a different corpus; scores are not comparable
+  train_split: train
+  val_split: val
+  image_size: 256                # MEASURED from the file, not assumed; a wrong value raises
+  normalize: true                # non-negotiable in practice -- raw values run 0..~2556
+  channel_mask: ''               # '' keeps all 100; else a configs/masks/*.json
+  num_workers: 32                # MEASURED peak 221.6 cube/s, job 984449. The pipeline is
+                                 # loader-bound, so this and not batch_size sets the wall
+                                 # clock. Coupled to batch_size -- nw=72 OOM'd.
+  max_train: 0                   # 0 = all
+  max_val: 0
+
+model:
+  in_channels: 100               # must equal the reader's in_channels; checked before fork
+  latent_dim: 256                # = ters-2-graph config.model.nf, the vector DiffSpectra is
+                                 # conditioned on, and the quantity this experiment is about.
+                                 # Floor ~154, the largest molecule's DOF; no ceiling, since
+                                 # PCA finds no knee.
+  latent_hw: 1                   # 1 = the verbatim ters-2-graph global vector. k>1 selects
+                                 # TersSpatialEncoder, a different class, so its number is not
+                                 # about that conditioning vector.
+  decoder_pad_blocks: 0          # capacity control for the latent_hw sweep
+  filters: [64, 128, 256, 512]   # = ters-2-graph config.model.ters_filters
+  kernel_size: [3, 3, 3, 3]
+  n_groups: 8
+  stem_channels: null            # null = filters[0]. Setting it selects TersSpatialEncoder
+                                 # even at latent_hw=1.
+  zero_init: true                # MEASURED: without it the initial MSE is 29.3 against a 0.30
+                                 # baseline, and early epochs shrink the output rather than
+                                 # learning. Set false only to reproduce that.
+
+training:
+  batch_size: 16                 # MEASURED 40.0 s/epoch at 16 against 58.3 at 64, job 984517:
+                                 # smaller is faster, because the run is loader-bound and a fat
+                                 # prefetch queue evicts the page cache holding the file it is
+                                 # reading. Coupled to warmup_steps.
+  eval_batch_size: 16
+  n_epochs: 100                  # MEASURED as the wrong budget, job 991661 -- val_mse bottoms
+                                 # at epoch 25 and degrades to 0.2718 by 99. Left at 100
+                                 # deliberately: best.pt tracks val, and the full curve is the
+                                 # evidence for the overfitting claim.
+  lr: 1.0e-4                     # NOT MEASURED. A default, not a finding. Treat a
+                                 # disappointing curve as an LR question first.
+  weight_decay: 0.0              # MEASURED false, job 991661, that "a 256-d bottleneck is the
+                                 # regulariser". The highest-value unmeasured number in this
+                                 # file -- never swept, assumed away.
+  sam_weight: 0.0                # 0 = plain MSE
+  grad_clip: 1.0
+  warmup_steps: 500              # Coupled to batch_size and nothing enforces it: a fixed step
+                                 # count is 1.3% of training at bs=16 and 21% at bs=256.
+                                 # Re-check whenever batch_size or lr moves.
+  amp_dtype: bf16                # bf16 on GH200: no loss scaler, and unlike fp16 the exponent
+                                 # range covers the ~1e-9 tails a dead channel produces
+  log_every: 20
+  eval_every: 1                  # epochs
+  ckpt_every: 5                  # epochs
+  seed: 0
+  workdir: exp/default
+  max_steps: 0                   # 0 = no cap; >0 stops early (smoke runs)

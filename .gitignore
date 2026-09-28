@@ -1,0 +1,6 @@
+**/__pycache__/
+slurm/logs/
+*.h5
+.env
+.env.*
+exp/
